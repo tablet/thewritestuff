@@ -38,7 +38,7 @@ post page load.
         Writes.observe(window, 'load', function() {
             Writes.waitingToWrite.push(function() {
                 document.write.apply(['<script type="text/javascript" src="http://widgets.su.ck/widget.js"></script>'], document.getElementById('target'));
-            );
+            });
             // this will force onFinish to call and write the above ...
             // the interface here is terrible ... sorry.
             document.write('');
