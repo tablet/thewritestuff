@@ -1,7 +1,7 @@
 # thewritestuff
  * Authors: Matthew Story <matt@tablethotels.com>
  * Version: 0.9 (stable, but not sane)
- * License: [BSD](https://github.com/tablet/thewritestuff/blob/0.9/LICENSE
+ * License: [BSD](https://github.com/tablet/thewritestuff/blob/0.9/LICENSE)
  * Copyright: &copy; 2011, [Tablet, Inc](http://www.tablethotels.com)
 
 ### Why?
