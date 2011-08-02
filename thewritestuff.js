@@ -14,6 +14,27 @@
 ************************************************/
 
 /*TODO: comments*/
+var Write = function() {
+    this.init.apply(this, arguments);
+};
+Write.prototype = {
+    init: function(str, bind) {
+        this.options = this.extend({
+            register: true
+        }, arguments[2]);
+        this.str = str;
+        this.bind = (!bind || bind == document || bind == window) ? document.body:bind;
+        if (this.options.register) {
+            Writes.register(this);
+        }
+    },
+    extend: function(obj1, obj2) {
+        for (var i in obj2) {
+            obj1[i] = obj2[i];
+        }
+        return obj1;
+    }
+};
 var Writes = {
     writes: [],
     inprocess: [],
@@ -62,7 +83,7 @@ var Writes = {
         var uniqueWrites = [];
         for (var i=0;i<writes.length;i++) {
             var key = this.getKeyFromBind(writes[i].bind, uniqueWrites);
-            if (key < 0) {    
+            if (key < 0) {
                 uniqueWrites.push(new Write('', writes[i].bind, {register: false}));
                 key = uniqueWrites.length-1;
             }
@@ -82,7 +103,8 @@ var Writes = {
         var innerHTML = this.writeAndReplaceScripts(write, after);
         if (!innerHTML && innerHTML.constructor != String) {
             return false;
-        } else if (innerHTML.constructor == String) {
+        }
+        else if (innerHTML.constructor == String) {
             this.appendChildren(write.bind, this.arrayify(this.getChildrenFromString(innerHTML)));
         }
         return true;
@@ -99,10 +121,91 @@ var Writes = {
                 return false;
             }
         }
-        return (strings.length) ? strings.join(''):true;
+        return (strings.length) ? strings.join('') : true;
     },
-    splitStringByScripts: function(str) {
-        return this.zipper(str.split(this.scriptTag) || [], str.match(this.scriptTag) || []);
+    getChildrenFromString: function(str) {
+        // workaround necessary to accommodate IE
+        if (str.match(this.scriptTag)) {
+            return [this.buildScriptTagFromString(str)];
+        }
+        this.div.innerHTML = str;
+        return this.div.childNodes;
+    },
+    appendChildren: function(element, children) {
+        for (var i=0;i<children.length;i++) {
+            if (children[i].tagName == 'SCRIPT') {
+                var clone;
+                //workaround for IE
+                if (!!(window.attachEvent && !window.opera)) {
+                    clone = children[i];
+                }
+                else {
+                    clone = children[i].cloneNode(true);
+                }
+                // workaround for safari
+                if (!clone.src && !clone.SRC) {
+                    element.appendChild(clone);
+                    element.appendChild((!!(window.attachEvent && !window.opera)) ? this.finishScript() : this.finishScript().cloneNode(true));
+                }
+                else {
+                    if (!!(window.attachEvent && !window.opera)) {
+                        this.onReadyStateChangeHandler = this.bind(this.onReadyStateChange, this);
+                        Writes.observe(clone, 'readystatechange', this.onReadyStateChangeHandler);
+                    }
+                    else {
+                        Writes.observe(clone, 'load', this.bind(this.finish, this));
+                    }
+                    element.appendChild(clone);
+                }
+            }
+            else {
+                element.appendChild(children[i]);
+            }
+        }
+    },
+    finishScript: function() {
+        if (!!(window.attachEvent && !window.opera)) {
+            this.finishScriptTag = false;
+        }
+        if (!this.finishScriptTag) {
+            this.finishScriptTag = document.createElement('script');
+            this.finishScriptTag.type = 'text/javascript';
+            var innerHTML = 'window.setTimeout(Writes.bind(Writes.finish, Writes), 0);';
+            if (!!(window.attachEvent && !window.opera)) {
+                this.finishScriptTag.text = innerHTML;
+            } else {
+                this.finishScriptTag.appendChild(document.createTextNode(innerHTML));
+            }
+        }
+        return this.finishScriptTag; 
+    },
+    buildScriptTagFromString: function(str) {
+        var keyValuePairs = this.makeKeyValuePairs(str);
+        var scriptTag = document.createElement('script');
+        for (var i in keyValuePairs) {
+            scriptTag.setAttribute(i, keyValuePairs[i]);
+        }
+        var innerHTML = str.replace(/<[Ss][Cc][Rr][Ii][Pp][Tt][^>]*>([\S\s]*?)<\/[Ss][Cc][Rr][Ii][Pp][Tt]>/g, '$1');
+        if (innerHTML) {
+            if (!!(window.attachEvent && !window.opera)) {
+                scriptTag.text = innerHTML;
+            } else {
+                scriptTag.appendChild(document.createTextNode(innerHTML));
+            }
+        }
+        return scriptTag;
+    },
+    makeKeyValuePairs: function(str) {
+        str = str.replace(/<[Ss][Cc][Rr][Ii][Pp][Tt]([^>]*)>[\S\s]*/g, '$1');
+        str = (str && !str.split(' ')) ? [str] : str.split(' ');
+        var kvps = {};
+        for (var i=0;i<str.length;i++) {
+            str[i] = str[i].split('=');
+            if (str[i].length == 2) {
+                kvps[str[i][0].replace(/^[Ss][Rr][Cc]$/g, 'src')] = str[i][1].replace(/(^\s*['"])|(['"]\s*$)/g, '');
+            }
+        }
+        return kvps;
     },
     finish: function() {
         this.work[this.workIndex] = '';
@@ -133,6 +236,28 @@ var Writes = {
         this.work = [];
         this.workIndex = false;
     },
+    onFinish: function() {
+        if (Writes.waitingToWrite.length) {
+            (Writes.waitingToWrite.shift())();
+        }
+    },
+    onLoad: function() {
+        document.write = function(str) {
+            new Write(str, this);
+        }
+        this.onFinish();
+    },
+    getKeyFromBind: function(bind, writes) {
+        for (var i=0;i<writes.length;i++) {
+            if (bind == writes[i].bind) {
+                return i;
+            }   
+        }   
+        return -1; 
+    },
+    splitStringByScripts: function(str) {
+        return this.zipper(str.split(this.scriptTag) || [], str.match(this.scriptTag) || []);
+    },
     bindWrites: function(writes, bind) {
         for (var i=0;i<writes.length;i++) {
             writes.bind = bind;
@@ -143,77 +268,6 @@ var Writes = {
         return function() {
             method.apply(bind, arguments);
         }
-    },
-    appendChildren: function(element, children) {
-        for (var i=0;i<children.length;i++) {
-            if (children[i].tagName == 'SCRIPT') {
-                //workaround for IE
-                if (!!(window.attachEvent && !window.opera)) {
-                    var clone = children[i];
-                } else {
-                    var clone = children[i].cloneNode(true);
-                }
-                //workaround for safari
-                if (!clone.src && !clone.SRC) {
-                    element.appendChild(clone);
-                    element.appendChild((!!(window.attachEvent && !window.opera)) ? this.finishScript():this.finishScript().cloneNode(true));
-                } else {
-                    if (!!(window.attachEvent && !window.opera)) {
-                        this.onReadyStateChangeHandler = this.bind(this.onReadyStateChange, this);
-                        Writes.observe(clone, 'readystatechange', this.onReadyStateChangeHandler);
-                    } else {
-                        Writes.observe(clone, 'load', this.bind(this.finish, this));
-                    }
-                    element.appendChild(clone);
-                }
-            } else {
-                element.appendChild(children[i]);
-            }
-        }
-    },
-    getChildrenFromString: function(str) {
-        //workaround for IE
-        if (str.match(this.scriptTag)) {
-            return [this.buildScriptTagFromString(str)];
-        }
-        this.div.innerHTML = str;
-        return this.div.childNodes;
-    },
-    buildScriptTagFromString: function(str) {
-        var keyValuePairs = this.makeKeyValuePairs(str);
-        var scriptTag = document.createElement('script');
-        for (var i in keyValuePairs) {
-            scriptTag.setAttribute(i, keyValuePairs[i]);
-        }
-        var innerHTML = str.replace(/<[Ss][Cc][Rr][Ii][Pp][Tt][^>]*>([\S\s]*?)<\/[Ss][Cc][Rr][Ii][Pp][Tt]>/g, '$1');
-        if (innerHTML) {
-            if (!!(window.attachEvent && !window.opera)) {
-                scriptTag.text = innerHTML;
-            } else {
-                scriptTag.appendChild(document.createTextNode(innerHTML));
-            }
-        }
-        return scriptTag;
-    },
-    makeKeyValuePairs: function(str) {
-        str = str.replace(/<[Ss][Cc][Rr][Ii][Pp][Tt]([^>]*)>[\S\s]*/g, '$1');
-        str = (str && !str.split(' ')) ? [str]:str.split(' ');
-        var kvps = {};
-        for (var i=0;i<str.length;i++) {
-            str[i] = str[i].split('=');
-            if (str[i].length == 2) {
-                kvps[str[i][0].replace(/^[Ss][Rr][Cc]$/g, 'src')] = str[i][1].replace(/(^\s*['"])|(['"]\s*$)/g, '');
-            }
-        }
-        return kvps;
-    },
-    getKeyFromBind: function(bind, writes) {
-        for (var i=0;i<writes.length;i++) {
-            if (bind == writes[i].bind) {
-                return i;
-            }   
-        }   
-        return -1; 
     },
     zipper: function(arr1, arr2) {
         var arr = [];
@@ -226,22 +280,6 @@ var Writes = {
             }
         }
         return arr;
-    },
-    finishScript: function() {
-        if (!!(window.attachEvent && !window.opera)) {
-            this.finishScriptTag = false;
-        }
-        if (!this.finishScriptTag) {
-            this.finishScriptTag = document.createElement('script');
-            this.finishScriptTag.type = 'text/javascript';
-            var innerHTML = 'window.setTimeout(Writes.bind(Writes.finish, Writes), 0);';
-            if (!!(window.attachEvent && !window.opera)) {
-                this.finishScriptTag.text = innerHTML;
-            } else {
-                this.finishScriptTag.appendChild(document.createTextNode(innerHTML));
-            }
-        }
-        return this.finishScriptTag; 
     },
     arrayify: function(arresque) {
         var arr = [];
@@ -264,11 +302,6 @@ var Writes = {
             elem.detachEvent("on" + eventName, method);
         }
     },
-    onFinish: function() {
-        if (Writes.waitingToWrite.length) {
-            (Writes.waitingToWrite.shift())();
-        }
-    },
     load: function() {
         var imgs = (navigator.userAgent.indexOf('AppleWebKit/') > -1) ? document.getElementsByTagName('img'):[];    
         if (!imgs.length || imgs[imgs.length-1].complete) {
@@ -276,33 +309,6 @@ var Writes = {
             return;
         }
         window.setTimeout(this.bind(this.load, this), 100);
-    },
-    onLoad: function() {
-        document.write = function(str) {
-            new Write(str, this);
-        }
-        this.onFinish();
     }
 };
 Writes.observe(window, 'load', Writes.bind(Writes.load, Writes));
-var Write = function() {
-    this.init.apply(this, arguments);
-};
-Write.prototype = {
-    init: function(str, bind) {
-        this.options = this.extend({
-            register: true
-        }, arguments[2]);
-        this.str = str;
-        this.bind = (!bind || bind == document || bind == window) ? document.body:bind;
-        if (this.options.register) {
-            Writes.register(this);
-        }
-    },
-    extend: function(obj1, obj2) {
-        for (var i in obj2) {
-            obj1[i] = obj2[i];
-        }
-        return obj1;
-    }
-};
