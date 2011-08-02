@@ -48,7 +48,7 @@ post page load.
 
 We agree!  Please help us make it better by forking it.  If we all stand 
 together, we can make inconsiderate widgetists irrelivant through 
-spectacular feats of frustation-driven will.
+spectacular feats of frustation.
 
 ### Footprint
 
