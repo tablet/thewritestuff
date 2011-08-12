@@ -2,13 +2,13 @@
 ** thewritestuff.js
 **
 ** a self-standing library that monkey-patches
-** document.write corss broswer for use after
+** document.write cross browser for use after
 ** page load.  This enables the pushing of 3rd
 ** party widgets and libraries based on
 ** document.write after the page load event.
 **
 ** @authors: Matthew Story <matt@tablethotels.com>
-**          Dan Conner <dan@tablethotels.com>
+**           Dan Conner <dan@tablethotels.com>
 ** @version: 0.9
 ** @license: BSD (see LICENSE)
 ** @copyright: 2011, Tablet Inc
