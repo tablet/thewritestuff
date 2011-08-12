@@ -1,11 +1,4 @@
-# thewritestuff
- * Authors: Matthew Story <matt@tablethotels.com> 
-            Dan Conner <dan@tablethotels.com>
-   (Borrowing liberally from Sam Stephenson's prototype.js)
- * Version: 0.9 (stable, but not sane)
- * License: [BSD](https://github.com/tablet/thewritestuff/blob/stable/LICENSE)
- * Copyright: &copy; 2011, [Tablet, Inc](http://www.tablethotels.com)
-
+# thewritestuff -- v0.9 (stable, but not sane)
 ### Why?
 
 Widget developers are a rather inconsiderate lot.  They do fun things like 
@@ -69,3 +62,15 @@ get something simple working, and we didn't think you'd like that either.
  * No way to consistantly register writes, without introducing a race-condition,
    outside of pushing to 'waitingToWrite', followed by a document.write('').  This
    is such bad interface that it should be considered a bug.
+
+### Authors
+
+* Matthew Story <matt@tablethotels.com>
+* Dan Conner <dan@tablethotels.com>
+
+Borrows liberally from Sam Stephenson's prototype.js
+
+### License
+
+ [BSD](https://github.com/tablet/thewritestuff/blob/stable/LICENSE), Copyright: &copy; 2011, [Tablet, Inc](http://www.tablethotels.com)
+
