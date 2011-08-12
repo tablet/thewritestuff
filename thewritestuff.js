@@ -7,7 +7,8 @@
 ** party widgets and libraries based on
 ** document.write after the page load event.
 **
-** @author: Matthew Story <matt@tablethotels.com>
+** @authors: Matthew Story <matt@tablethotels.com>
+**          Dan Conner <dan@tablethotels.com>
 ** @version: 0.9
 ** @license: BSD (see LICENSE)
 ** @copyright: 2011, Tablet Inc
